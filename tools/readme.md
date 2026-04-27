@@ -1,3 +1,5 @@
+paqueteria de librerias:
+
 {
   "name": "p-tc1",
   "version": "1.0.0",
@@ -9,17 +11,8 @@
   "author": "Pedro Requena",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.7.1",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "got": "^11.8.2",
     "jsdom": "^24.0.0",
     "moment": "^2.30.1",
-    "mssql": "^10.0.2",
-    "nodemon": "^3.1.0",
-    "puppeteer": "^22.7.0",
     "xlsx": "^0.18.5"
   }
 }
