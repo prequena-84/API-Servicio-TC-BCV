@@ -26,37 +26,48 @@ router.get('/', (req, res) =>  {
 
 router.get('/ImporTipoCambio-1', async (req, res) => {
 
-    const 
-        TC = Tipo_Cambio,
-        TcBCV = [],
-        url = 'https://www.bcv.org.ve/estadisticas/tipo-cambio-de-referencia-smc'
-    ;
+    try {
+        const 
+            TC = Tipo_Cambio,
+            TcBCV = [],
+            url = 'https://www.bcv.org.ve/estadisticas/tipo-cambio-de-referencia-smc'
+        ;
 
-    let
-        response = await got(url),
-        docWeb = new JSDOM(response.body).window.document,
-        nombreExcel = `${FechaServidor()}_BCV.xls`;
-    ;
+        const response = await got(url, {
+            https: {
+                rejectUnauthorized: false
+            },
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+            }
+        });
 
-    // Definimos el nombre automatico de la Descarga de Excel que contiene los datos de los Tipo de Cambios en el sevidor
-    setDataExcel(nombreExcel);
+        const docWeb = new JSDOM(response.body).window.document;
+        const nombreExcel = `${FechaServidor()}_BCV.xls`;
 
-    // Función que descarga
-    await Promise.all([
-        FN_DescargaExcel(RutaExcel_BCV(docWeb))
-            .then(() => console.log('Descarga Sastifactoria del Archivo'))
-            .catch( err => console.log(`Error al descargar el archivo: ${err}`))
-    ]);
-    
-    //Carga de Información en el Objecto de respuesta con el Tipo de Cambio
-    TC.map(item => {
-        if ( FN_TC1(item).Moneda !== '' ) {
-            TcBCV.push(FN_TC1(item))
-        };
-    });
+        // Definimos el nombre automatico de la Descarga de Excel que contiene los datos de los Tipo de Cambios en el sevidor
+        setDataExcel(nombreExcel);
 
-    // Envio de Respuesta del Servidor
-    res.status(200).send(TcBCV);
+        // Función que descarga
+        await FN_DescargaExcel(RutaExcel_BCV(docWeb));
+        console.log('Descarga Satisfactoria del Archivo');
+        
+        //Carga de Información en el Objecto de respuesta con el Tipo de Cambio
+        TC.map(item => {
+            if ( FN_TC1(item).Moneda !== '' ) {
+                TcBCV.push(FN_TC1(item))
+            };
+        });
+
+        // Envio de Respuesta del Servidor
+        res.status(200).send(TcBCV);
+
+    } catch (err) {
+        console.error('Error en scraping:', err);
+        res.status(500).send({
+            mensaje: `Error en la Api: ${err.message}`
+        });
+    }
 
     // Funcion para definir la extracción del periodo correcto en TC
     function RutaExcel_BCV(documento) {

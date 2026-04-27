@@ -8,6 +8,5 @@ module.exports = function() {
         mes = moment().month() + 1,
         año = moment().year()
     ;
-
     return `${dia}_${mes}_${año}`;
 };
