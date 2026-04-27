@@ -1,0 +1,45 @@
+services:
+  development:
+    container_name: "dev-backend-api-servicio-tc-bcv"
+    image: dev
+    build:
+      context: .
+      target: development
+    env_file:
+      - .env.development
+      ##environment:
+      ##- DB_HOST=http://db-local:3306
+    ports:
+      - "3220:3220"
+    networks:
+      - invernova-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    #depends_on:
+      #- db-local
+
+  production:
+    container_name: "prod-backend-api-servicio-tc-bcv"
+    image: prod
+    build:
+      context: .
+      target: production
+    env_file:
+      - .env.production
+    ports:
+      - "8220:8220"
+    networks:
+      - invernova-network
+    restart: unless-stopped
+    ##depends_on:
+    ## - dynamodb-local
+
+networks:
+  invernova-network:
+    ##driver: bridge
+    external: true # Red creada manualmente: docker network create invernova-network
+
+volumes:
+  db_data:
