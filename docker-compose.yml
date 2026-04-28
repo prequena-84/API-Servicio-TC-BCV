@@ -1,4 +1,23 @@
 services:
+  db-local:
+    image: mysql:8.0.43
+    container_name: db_tc_bcv
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_tc_bcv
+      MYSQL_USER: userdev
+      MYSQL_PASSWORD: dev1234
+      ##MYSQL_ROOT_HOST: "%"
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3307:3306'
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d # scripts de inicialización de base de datos
+      - db_data:/var/lib/mysql # persistencia de datos para developer
+    networks:
+      - invernova-network
+
   development:
     container_name: "dev-backend-api-servicio-tc-bcv"
     image: dev
@@ -17,8 +36,8 @@ services:
       - .:/app
       - /app/node_modules
     restart: unless-stopped
-    #depends_on:
-      #- db-local
+    depends_on:
+      - db-local
 
   production:
     container_name: "prod-backend-api-servicio-tc-bcv"

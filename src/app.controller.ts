@@ -1,12 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { AppRepository } from './app.repository';
 
-@Controller()
+@Controller('api/v1/welcome')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly appRepository: AppRepository) { }
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
-}
+  welcomeAPI(): string {
+    return this.appRepository.welcomeAPI("Bienvenido a la API del Servicio TC-BCV");
+  };
+};
