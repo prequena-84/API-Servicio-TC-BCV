@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 
 // Importación del Modulo de Conexion a la Base de Datos MySQL
 import { DatabaseModule } from './config/database/database.module';
+import { CurrencyModule } from './modules/currency/currency.module';
 
 
 
@@ -18,6 +19,7 @@ import { DatabaseModule } from './config/database/database.module';
       ],
     }),
     DatabaseModule,
+    CurrencyModule,
   ],
   controllers: [AppController],
   providers: [AppRepository],

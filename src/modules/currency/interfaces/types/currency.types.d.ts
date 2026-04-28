@@ -1,0 +1,22 @@
+export type CurrencyType = 
+    'EUR'|
+    'CNY'|
+    'TRY'|
+    'RUB'|
+    'USD'|
+    'CAD'|
+    'INR'|
+    'JPY'|
+    'ARS'|
+    'BRL'|
+    'CLP'|
+    'COP'|
+    'UYU'|
+    'PEN'|
+    'BOB'|
+    'MXP'|
+    'CUC'|
+    'NIO'|
+    'DOP'|
+    'TTD'|
+    'ANG';

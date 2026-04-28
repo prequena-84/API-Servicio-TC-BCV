@@ -17,7 +17,7 @@ USE db_tc_bcv_dev;
 -- ============================================================================
 
 -- 1. tc_bcv Table: Tabla central de Tasas
-CREATE TABLE IF NOT EXISTS tcBcv (
+CREATE TABLE IF NOT EXISTS currency (
     id INT AUTO_INCREMENT PRIMARY KEY,
     currencyCode ENUM('EUR','CNY','TRY','RUB','USD','CAD','INR','JPY','ARS','BRL','CLP','COP','UYU','PEN','BOB','MXP','CUC','NIO','DOP','TTD','ANG') NOT NULL COMMENT 'Distingue la abreviatura de la moneda',
     currencyName varchar(100) NOT NULL COMMENT 'Distingue el nombre de la moneda',
@@ -26,5 +26,5 @@ CREATE TABLE IF NOT EXISTS tcBcv (
     lastUpdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de la última actualización',
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de creación',
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de actualización',
-    deletedAt TIMESTAMP NULL DEFAULT NULL COMMENT 'Indica la fecha y hora de eliminación'
+    deletedAt TIMESTAMP DEFAULT NULL COMMENT 'Indica la fecha y hora de eliminación'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
