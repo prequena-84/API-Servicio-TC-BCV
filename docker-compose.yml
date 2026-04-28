@@ -1,11 +1,11 @@
 services:
   db-local:
     image: mysql:8.0.43
-    container_name: db_tc_bcv
+    container_name: db_tc_bcv_dev
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: db_tc_bcv
+      MYSQL_DATABASE: db_tc_bcv_dev
       MYSQL_USER: userdev
       MYSQL_PASSWORD: dev1234
       ##MYSQL_ROOT_HOST: "%"

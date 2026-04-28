@@ -1,16 +1,16 @@
 SET NAMES 'utf8mb4'; 
 
 -- Crear bases de datos
-CREATE DATABASE IF NOT EXISTS db_tc_bcv
+CREATE DATABASE IF NOT EXISTS db_tc_bcv_dev
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
 -- Permiso de usuario
-GRANT ALL PRIVILEGES ON db_tc_bcv.* TO 'userdev'@'%';
+GRANT ALL PRIVILEGES ON db_tc_bcv_dev.* TO 'userdev'@'%';
 FLUSH PRIVILEGES;
 
 -- --- Tablas para Development ---
-USE db_tc_bcv;
+USE db_tc_bcv_dev;
 
 -- ============================================================================
 -- Core Tables para el registro de las tasas de cambios del BDV - Refactorización API-Microservicio-TC-BCV
