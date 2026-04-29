@@ -1,0 +1,25 @@
+import type { CurrencyType } from "src/modules/currency/interfaces/types/currency.types";
+
+export const CURRENCY_TYPE:CurrencyType[] = [
+   "EUR",
+   "CNY", 
+   "TRY", 
+   "RUB", 
+   "USD", 
+   "CAD", 
+   "INR", 
+   "JPY", 
+   "ARS", 
+   "BRL", 
+   "CLP", 
+   "COP", 
+   "UYU", 
+   "PEN", 
+   "BOB", 
+   "MXP", 
+   "CUC", 
+   "NIO", 
+   "DOP", 
+   "TTD", 
+   "ANG",
+];

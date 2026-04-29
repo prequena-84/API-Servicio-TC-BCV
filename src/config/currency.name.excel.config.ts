@@ -1,0 +1,1 @@
+export const nameExcel: string = 'Tasa_de_Cambio_Referencia_BCV.xls';
