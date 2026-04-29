@@ -19,8 +19,8 @@ USE db_tc_bcv_dev;
 -- 1. tc_bcv Table: Tabla central de Tasas
 CREATE TABLE IF NOT EXISTS currency (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    currencyCode ENUM('EUR','CNY','TRY','RUB','USD','CAD','INR','JPY','ARS','BRL','CLP','COP','UYU','PEN','BOB','MXP','CUC','NIO','DOP','TTD','ANG') NOT NULL COMMENT 'Distingue la abreviatura de la moneda',
-    currencyName varchar(100) NOT NULL COMMENT 'Distingue el nombre de la moneda',
+    currency ENUM('EUR','CNY','TRY','RUB','USD','CAD','INR','JPY','ARS','BRL','CLP','COP','UYU','PEN','BOB','MXP','CUC','NIO','DOP','TTD','ANG') NULL COMMENT 'Distingue la abreviatura de la moneda',
+    country varchar(100) NULL COMMENT 'Distingue el nombre de la moneda',
     purchaseRate decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Indica la tasa de compra de la moneda',
     saleRate decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Indica la tasa de venta de la moneda',
     lastUpdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de la última actualización',

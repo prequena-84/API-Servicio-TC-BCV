@@ -32,16 +32,16 @@ export class CurrencyEntity implements ICurrency {
             "TTD", 
             "ANG",
         ],
-        nullable: false,
+        nullable: true,
     })
-    currencyCode: CurrencyType;
+    currency: CurrencyType | null;
 
     @Column({
         type: 'varchar',
         length: 100,
-        nullable: false,
+        nullable: true,
     })
-    currencyName: string;
+    country: string | null;
 
     // Tasa de Compra de la Moneda
     @Column({
@@ -61,7 +61,10 @@ export class CurrencyEntity implements ICurrency {
     })
     saleRate: number;
 
-    @CreateDateColumn({ type: 'timestamp' })
+    @Column({
+        type: 'timestamp',
+        nullable: true,
+    })
     lastUpdate: Date;
 
     @CreateDateColumn({ type: 'timestamp' })

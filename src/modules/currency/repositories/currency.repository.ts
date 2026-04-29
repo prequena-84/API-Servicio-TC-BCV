@@ -6,6 +6,8 @@ import { CurrencyEntity } from '../domain/currency.entity';
 //import { JSDOM } from 'jsdom';
 import { nameExcel } from '../../../config/currency.name.excel.config';
 
+import { CurrencyDto } from '../interfaces/dto/currency.dto';
+
 import fs from 'fs';
 import axios from 'axios';
 import configAxios from '../../../config/request.config';
@@ -20,7 +22,7 @@ export class CurrencyRepository {
     constructor(
         @InjectRepository(CurrencyEntity)
         private readonly currencyRepository: Repository<CurrencyEntity>
-    ) {};
+    ) { };
 
     // Metodo para enviar el texto de bienvenida
     welcomeAPI(text: string): string {
@@ -44,15 +46,14 @@ export class CurrencyRepository {
     };
 
     // Extracción del Excel
-    extractDataExcel(tipoCambio: string):ICurrency {
-        
+    extractDataExcel(tipoCambio: string): ICurrency {
         const objExcel1: any[] = [];
         const objExcel2: any[] = [];
-        const ruta:string = path.join(__dirname, '../../../download', nameExcel);
+        const ruta: string = path.join(__dirname, '../../../download', nameExcel);
         const workbook = XLSX.readFile(ruta);
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        
+
         // Interfaz para definir la estructura de las filas del Excel devueltas por XLSX
         interface ExcelRow {
             'BANCO CENTRAL DE VENEZUELA'?: string;
@@ -62,31 +63,29 @@ export class CurrencyRepository {
             __EMPTY_3?: string;
             [key: string]: any;
         };
-
         const data = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
 
         data.forEach((item: ExcelRow) => {
-            if ( item['BANCO CENTRAL DE VENEZUELA'] == '' ) {
+            if (item['BANCO CENTRAL DE VENEZUELA'] == '') {
                 objExcel1.push({
                     column: item
                 });
             };
         });
 
-        const objecto:object = objExcel1[0].column;
-        const clave:string[] = Object.keys(objecto);
-        const claveFecha:string = clave[clave.length - 1];
-        console.log(claveFecha);
+        const objecto: object = objExcel1[0].column;
+        const clave: string[] = Object.keys(objecto);
+        const claveFecha: string = clave[clave.length - 1];
 
         //Ejemplo de Lectura
         data.forEach((item: ExcelRow) => {
             if (item['BANCO CENTRAL DE VENEZUELA'] == tipoCambio) {
                 objExcel2.push({
-                    'Moneda/País':item.__EMPTY,
-                    'Compra1':item.__EMPTY_1,
-                    'Venta1':item.__EMPTY_2,
-                    'Compra2':item.__EMPTY_3,
-                    'Venta2':item[`${claveFecha}`]
+                    currency: item['BANCO CENTRAL DE VENEZUELA'],
+                    country: item.__EMPTY,
+                    purchaseRate: item.__EMPTY_3,
+                    saleRate: item[`${claveFecha}`],
+                    lastUpdate: this.parseBCVDate(claveFecha),
                 });
             };
         });
@@ -94,17 +93,61 @@ export class CurrencyRepository {
         // Retorno del Objeto
         if (objExcel2.length > 0) {
             return {
-                currencyCode: objExcel2[0]['Moneda/País'],
-                purchaseRate: objExcel2[0].Compra2,
-                saleRate:  objExcel2[0].Venta2,
+                currency: objExcel2[0].currency,
+                country: objExcel2[0].country,
+                purchaseRate: objExcel2[0].purchaseRate,
+                saleRate: objExcel2[0].saleRate,
+                lastUpdate: objExcel2[0].lastUpdate,
             };
         } else {
-            return { currencyCode: null, purchaseRate: 0.00, saleRate: 0.00 };
+            return {
+                currency: null,
+                country: null,
+                purchaseRate: 0.00,
+                saleRate: 0.00,
+                lastUpdate: new Date(),
+            };
         };
+    };
+
+    // MEtodo para guardar los datos en la Entidad
+    async recordingCurrency(data: Partial<CurrencyDto>): Promise<CurrencyEntity> {
+        const newCurrency = this.currencyRepository.create(data);
+        return await this.currencyRepository.save(newCurrency);
     };
 
     rutaExcel_BCV(documento: Document): string {
         let rutaExcel = documento?.querySelector('#block-system-main table tbody .file a') as HTMLAnchorElement | null;
         return rutaExcel?.href as string;
+    };
+
+    // conversion de fecha del BCV
+    private parseBCVDate(fechaString: string): Date {
+        try {
+            // Espera un formato tipo "28/04/2026 04:47 PM"
+            const [fechaPart, horaPart, ampm] = fechaString.split(' ');
+            
+            if (!fechaPart) return new Date(); // Fallback
+            
+            const [dia, mes, anio] = fechaPart.split('/');
+            
+            let hr = 0;
+            let min = 0;
+            
+            if (horaPart) {
+                const [horas, minutos] = horaPart.split(':');
+                hr = Number(horas);
+                min = Number(minutos);
+                
+                if (ampm) {
+                    if (ampm.toUpperCase() === 'PM' && hr < 12) hr += 12;
+                    if (ampm.toUpperCase() === 'AM' && hr === 12) hr = 0;
+                }
+            }
+
+            return new Date(Number(anio), Number(mes) - 1, Number(dia), hr, min);
+        } catch (error) {
+            return new Date(); 
+        };
     };
 };

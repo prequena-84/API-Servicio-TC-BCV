@@ -2,11 +2,11 @@ import type { CurrencyType } from './currency.types';
 
 interface ICurrency {
     id?: number;
-    currencyCode: CurrencyType | null;
-    currencyName?: string
+    currency: CurrencyType | null;
+    country: string | null;
     purchaseRate: number;
     saleRate: number;
-    lastUpdate?: Date;
+    lastUpdate: Date;
     createdAt?: Date;
     updatedAt?: Date;
     deletedAt?: Date | null;

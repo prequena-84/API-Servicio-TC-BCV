@@ -1,6 +1,6 @@
 import axios, { AxiosResponse  } from 'axios';
 //import { CurrencyEntity } from '../domain/currency.entity';
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, BadRequestException } from '@nestjs/common';
 import { CURRENCY_TYPE } from '../../../config/currency.type.config';
 import { CurrencyRepository } from '../repositories/currency.repository';
 import { JSDOM } from 'jsdom';
@@ -13,7 +13,7 @@ import type { CurrencyType } from '../interfaces/types/currency.types';
 export class CurrencyService {
     constructor(private readonly currencyRepository:CurrencyRepository) {};
 
-    async createCurrency(): Promise<void> {
+    async getCurrency(): Promise<ICurrency[]> {
         const currencies:CurrencyType[] = CURRENCY_TYPE;
         const tcBcv:Partial<ICurrency[]> = [];
         const urlBcv: string = 'https://www.bcv.org.ve/estadisticas/tipo-cambio-de-referencia-smc';
@@ -31,14 +31,19 @@ export class CurrencyService {
             // Carga de información en el Objecto de respuesta con el Tipo de Cambio
             currencies.forEach((item: CurrencyType) => {
                 const extract = this.currencyRepository.extractDataExcel(item);
-                if (extract.currencyCode !== null) tcBcv.push(extract as any);
+                if (extract.currency !== null) {
+                    this.currencyRepository.recordingCurrency(extract);
+                    console.log('------> Registro de Moneda <------');
+                    tcBcv.push(extract);
+                };
             });
 
             console.log('-------> Informacion Extraida con Exito<------');
-            console.log(tcBcv);
+            return tcBcv as ICurrency[];
             
         } catch(err) {
-            console.error("Error al obtener el HTML del BCV:", err);
+            if (err instanceof HttpException) throw err;
+            throw new BadRequestException(`Error al obtener el HTML del BCV: ${err.message}`);
         };
     };
 };
