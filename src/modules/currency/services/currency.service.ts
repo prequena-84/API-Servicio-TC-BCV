@@ -29,10 +29,9 @@ export class CurrencyService {
             console.log('------> Descarga Satisfactoria del Archivo<------');
 
             // Carga de información en el Objecto de respuesta con el Tipo de Cambio
-            currencies.map( (item: CurrencyType) => {
-                if ( this.currencyRepository.extractDataExcel(item).currencyCode !== null ) {
-                    tcBcv.push(this.currencyRepository.extractDataExcel(item));
-                };
+            currencies.forEach((item: CurrencyType) => {
+                const extract = this.currencyRepository.extractDataExcel(item);
+                if (extract.currencyCode !== null) tcBcv.push(extract as any);
             });
 
             console.log('-------> Informacion Extraida con Exito<------');

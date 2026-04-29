@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CurrencyEntity } from '../domain/currency.entity';
 //import { CURRENCY_TYPE } from '../../../config/currency.type.config';
 //import { JSDOM } from 'jsdom';
@@ -15,7 +17,10 @@ import type { ICurrency } from '../interfaces/types/currency.interfaces';
 @Injectable()
 export class CurrencyRepository {
 
-    constructor(private readonly currencyRepository: CurrencyEntity) {};
+    constructor(
+        @InjectRepository(CurrencyEntity)
+        private readonly currencyRepository: Repository<CurrencyEntity>
+    ) {};
 
     // Metodo para enviar el texto de bienvenida
     welcomeAPI(text: string): string {
