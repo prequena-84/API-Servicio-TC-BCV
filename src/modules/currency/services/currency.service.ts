@@ -29,14 +29,14 @@ export class CurrencyService {
             console.log('------> Descarga Satisfactoria del Archivo<------');
 
             // Carga de información en el Objecto de respuesta con el Tipo de Cambio
-            currencies.forEach((item: CurrencyType) => {
-                const extract = this.currencyRepository.extractDataExcel(item);
+            for (const currency of currencies) {
+                const extract = this.currencyRepository.extractDataExcel(currency);
                 if (extract.currency !== null) {
-                    this.currencyRepository.recordingCurrency(extract);
+                    await this.currencyRepository.recordingCurrency(extract);
                     console.log('------> Registro de Moneda <------');
                     tcBcv.push(extract);
                 };
-            });
+            };
 
             console.log('-------> Informacion Extraida con Exito<------');
             return tcBcv as ICurrency[];
