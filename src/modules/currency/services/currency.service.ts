@@ -64,7 +64,11 @@ export class CurrencyService {
         dateFrom?: Date,
         dateTo?: Date
     ): Promise<CurrencyEntity[]> {
-        return await this.currencyRepository.getCurrencyByFilter(currency, dateFrom, dateTo);
+        try {
+            return await this.currencyRepository.getCurrencyByFilter(currency, dateFrom, dateTo);
+        } catch (error) {
+            throw new BadRequestException(`Error al consultar el historial: ${error.message}`);
+        };
     };
 
     // Tarea Programada: 12 AM, 6 AM, 12 PM, 4 PM, 5 PM, 6 PM, 7 PM

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CurrencyEntity } from '../domain/currency.entity';
@@ -37,56 +37,76 @@ export class CurrencyRepository {
 
     // Metodo para Descarga del Excel
     async downExcel(docWeb: Document): Promise<void> {
-        const response = await axios(configAxios('stream', this.rutaExcel_BCV(docWeb)));
-        const ruta: string = path.join(__dirname, '../../../download', nameExcel);
-        const writer = fs.createWriteStream(ruta);
+        try {
+            const url = this.rutaExcel_BCV(docWeb);
+            if (!url) throw new Error('No se pudo encontrar el enlace de descarga en el documento del BCV.');
 
-        // Transfiere los datos del archivo al stream de escritura
-        response.data.pipe(writer);
+            const response = await axios(configAxios('stream', url));
+            const ruta: string = path.join(__dirname, '../../../download', nameExcel);
+            
+            // Asegurar que el directorio de descarga existe
+            const downloadDir = path.dirname(ruta);
+            if (!fs.existsSync(downloadDir)) {
+                fs.mkdirSync(downloadDir, { recursive: true });
+            };
 
-        // Salida de la confirmación de la descarga del archivo
-        return new Promise<void>((resolve, reject) => {
-            writer.on('finish', () => resolve());
-            writer.on('error', reject);
-        });
+            const writer = fs.createWriteStream(ruta);
+            response.data.pipe(writer);
+
+            return new Promise<void>((resolve, reject) => {
+                writer.on('finish', () => resolve());
+                writer.on('error', (err) => reject(new Error(`Error de escritura en disco: ${err.message}`)));
+            });
+        } catch (error) {
+            throw new InternalServerErrorException(`Fallo en la descarga del Excel: ${error.message}`);
+        };
     };
 
     // Lee el Excel UNA SOLA VEZ y devuelve todas las monedas procesadas
     parseAllCurrenciesFromExcel(): ICurrency[] {
-        const ruta: string = path.join(__dirname, '../../../download', nameExcel);
-        const workbook = XLSX.readFile(ruta);
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
-
-        // Extraer la clave de fecha (última columna de la fila vacía)
-        const filaFecha = data.find(item => item['BANCO CENTRAL DE VENEZUELA'] === '');
-        if (!filaFecha) return [];
-
-        const claves = Object.keys(filaFecha);
-        const claveFecha: string = claves[claves.length - 1];
-        const lastUpdate = this.parseBCVDate(claveFecha);
-
-        // Mapear todas las monedas en una sola pasada del arreglo
-        const resultado: ICurrency[] = [];
-        const validCurrencies: string[] = CURRENCY_TYPE;
-
-        data.forEach((item: ExcelRow) => {
-            const moneda = item['BANCO CENTRAL DE VENEZUELA']?.trim();
+        try {
+            const ruta: string = path.join(__dirname, '../../../download', nameExcel);
             
-            // SOLO procesamos si la moneda está en nuestra lista de CURRENCY_TYPE
-            if (moneda && validCurrencies.includes(moneda)) {
-                resultado.push({
-                    currency: moneda as CurrencyType,
-                    country: item.__EMPTY ?? null,
-                    purchaseRate: Number(item.__EMPTY_3) || 0,
-                    saleRate: Number(item[claveFecha]) || 0,
-                    lastUpdate,
-                });
+            if (!fs.existsSync(ruta)) {
+                throw new Error('Archivo no encontrado. La descarga previa pudo haber fallado.');
             };
-        });
 
-        return resultado;
+            const workbook = XLSX.readFile(ruta);
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const data = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
+
+            // Extraer la clave de fecha (última columna de la fila vacía)
+            const filaFecha = data.find(item => item['BANCO CENTRAL DE VENEZUELA'] === '');
+            if (!filaFecha) throw new Error('No se encontró la fila de fecha en el Excel.');
+
+            const claves = Object.keys(filaFecha);
+            const claveFecha: string = claves[claves.length - 1];
+            const lastUpdate = this.parseBCVDate(claveFecha);
+
+            // Mapear todas las monedas en una sola pasada del arreglo
+            const resultado: ICurrency[] = [];
+            const validCurrencies: string[] = CURRENCY_TYPE;
+
+            data.forEach((item: ExcelRow) => {
+                const moneda = item['BANCO CENTRAL DE VENEZUELA']?.trim();
+                
+                // SOLO procesamos si la moneda está en nuestra lista de CURRENCY_TYPE
+                if (moneda && validCurrencies.includes(moneda)) {
+                    resultado.push({
+                        currency: moneda as CurrencyType,
+                        country: item.__EMPTY ?? null,
+                        purchaseRate: Number(item.__EMPTY_3) || 0,
+                        saleRate: Number(item[claveFecha]) || 0,
+                        lastUpdate,
+                    });
+                };
+            });
+
+            return resultado;
+        } catch (error) {
+            throw new InternalServerErrorException(`Error al procesar el Excel: ${error.message}`);
+        };
     };
 
     // Guarda todas las monedas ignorando duplicados silenciosamente
@@ -98,32 +118,33 @@ export class CurrencyRepository {
             await this.currencyRepository.insert(data as any[]);
         } catch (error) {
             // Si el error es duplicado de clave única (MySQL: ER_DUP_ENTRY), lo ignoramos.
-            // Significa que los datos ya estaban en la BD.
             if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
                 console.log('------> Datos ya actualizados en la BD (duplicados omitidos) <------');
                 return;
             };
-            // Cualquier otro error sí lo lanzamos
-            throw error;
+            throw new InternalServerErrorException(`Error de base de datos al guardar: ${error.message}`);
         };
     };
 
     // Metodo para obtener los ultimos registros de la Base de Datos (un registro por moneda)
     async getLatestSavedCurrencies(): Promise<CurrencyEntity[]> {
-        // Subconsulta: obtener el id más reciente por cada moneda
-        return await this.currencyRepository
-            .createQueryBuilder('c')
-            .where(qb => {
-                const subQuery = qb
-                    .subQuery()
-                    .select('MAX(sub.id)')
-                    .from(CurrencyEntity, 'sub')
-                    .groupBy('sub.currency')
-                    .getQuery();
-                return `c.id IN ${subQuery}`;
-            })
-            .orderBy('c.currency', 'ASC')
-            .getMany();
+        try {
+            return await this.currencyRepository
+                .createQueryBuilder('c')
+                .where(qb => {
+                    const subQuery = qb
+                        .subQuery()
+                        .select('MAX(sub.id)')
+                        .from(CurrencyEntity, 'sub')
+                        .groupBy('sub.currency')
+                        .getQuery();
+                    return `c.id IN ${subQuery}`;
+                })
+                .orderBy('c.currency', 'ASC')
+                .getMany();
+        } catch (error) {
+            throw new InternalServerErrorException(`Error al recuperar registros de la BD: ${error.message}`);
+        };
     };
 
     async getCurrencyByFilter(
@@ -131,27 +152,26 @@ export class CurrencyRepository {
         dateFrom?: Date,
         dateTo?: Date
     ): Promise<CurrencyEntity[]> {
+        try {
+            const where: any = {};
 
-        // Inicializa el Where vacío
-        const where: any = {};
+            if (currency) where.currency = Array.isArray(currency) ? In(currency) : currency;
 
-        // 1. Filtro dinámico de monedas (una o un array)
-        if (currency) where.currency = Array.isArray(currency) ? In(currency) : currency;
+            if (dateFrom && dateTo) {
+                where.lastUpdate = Between(dateFrom, dateTo);
+            } else if (dateFrom) {
+                where.lastUpdate = MoreThanOrEqual(dateFrom);
+            } else if (dateTo) {
+                where.lastUpdate = LessThanOrEqual(dateTo);
+            };
 
-        // 2. Filtro dinámico de fechas
-        if (dateFrom && dateTo) {
-            where.lastUpdate = Between(dateFrom, dateTo);
-        } else if (dateFrom) {
-            where.lastUpdate = MoreThanOrEqual(dateFrom);
-        } else if (dateTo) {
-            where.lastUpdate = LessThanOrEqual(dateTo);
+            return await this.currencyRepository.find({
+                where,
+                order: { lastUpdate: 'DESC' },
+            });
+        } catch (error) {
+            throw new InternalServerErrorException(`Error en el filtro de búsqueda: ${error.message}`);
         };
-
-        // Registros obtenidos y devolución de datos según los filtros aplicados
-        return await this.currencyRepository.find({
-            where,
-            order: { lastUpdate: 'DESC' },
-        });
     };
 
     rutaExcel_BCV(documento: Document): string {
