@@ -10,7 +10,7 @@ export class CurrencyController {
     ) {};
 
     @Get()
-    async getCurrency(): Promise<ICurrency[]> {
-        return this.currencyService.getCurrency();
+    async getCurrencies(): Promise<ICurrency[]> {
+        return this.currencyService.getCurrencies();
     };
 };

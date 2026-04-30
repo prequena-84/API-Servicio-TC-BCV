@@ -1,6 +1,7 @@
-import axios, { AxiosResponse  } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 //import { CurrencyEntity } from '../domain/currency.entity';
 import { Injectable, HttpException, BadRequestException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { CURRENCY_TYPE } from '../../../config/currency.type.config';
 import { CurrencyRepository } from '../repositories/currency.repository';
 import { JSDOM } from 'jsdom';
@@ -11,19 +12,26 @@ import type { CurrencyType } from '../interfaces/types/currency.types';
 
 @Injectable()
 export class CurrencyService {
-    constructor(private readonly currencyRepository:CurrencyRepository) {};
+    constructor(private readonly currencyRepository: CurrencyRepository) { };
 
-    async getCurrency(): Promise<ICurrency[]> {
-        const currencies:CurrencyType[] = CURRENCY_TYPE;
-        const tcBcv:Partial<ICurrency[]> = [];
+    // Metodo llamado por el Controlador para responder a los usuarios (Lee de BD)
+    async getCurrencies(): Promise<ICurrency[]> {
+        return await this.currencyRepository.getLatestSavedCurrencies();
+    }
+
+    // Tarea Programada: Se ejecuta a las 6:00 AM y 6:00 PM
+    @Cron('0 0,6,12,18 * * *')
+    async syncCurrenciesFromBCV(): Promise<void> {
+        const currencies: CurrencyType[] = CURRENCY_TYPE;
+        const tcBcv: Partial<ICurrency[]> = [];
         const urlBcv: string = 'https://www.bcv.org.ve/estadisticas/tipo-cambio-de-referencia-smc';
 
         try {
-            const response:AxiosResponse<string> = await axios(configAxios('text',urlBcv));
-            const htmlDoc:string = response.data;
+            const response: AxiosResponse<string> = await axios(configAxios('text', urlBcv));
+            const htmlDoc: string = response.data;
 
-            const doc:Document = new JSDOM(htmlDoc).window.document;
-            
+            const doc: Document = new JSDOM(htmlDoc).window.document;
+
             // Función de carga de archivo
             await this.currencyRepository.downExcel(doc);
             console.log('------> Descarga Satisfactoria del Archivo<------');
@@ -38,8 +46,8 @@ export class CurrencyService {
                 };
             };
 
-            console.log('-------> Informacion Extraida con Exito<------');
-            return tcBcv as ICurrency[];
+            console.log('-------> Sincronización Automática con BCV Exitosa <------');
+            // return tcBcv as ICurrency[]; Ya no necesitamos retornar nada a la API
             
         } catch(err) {
             if (err instanceof HttpException) throw err;
@@ -47,3 +55,13 @@ export class CurrencyService {
         };
     };
 };
+
+/*
+    me queda pendiente crear ese job con la libreria de nest para poner a cargar la consulta en un intervalo de tiempo de 24 horas,
+    , luego crear el endpoint para que usuario meta la consulta de la tasa que quiera aplicar en su api, 
+    , luego agregar el filter global para capturar los errores y agregar los controladores de errores en los psoibles errores, sino agregar las descarga a cada 12 horas y 
+    con un distinc intentar que la misma base de daatos rechace el registro si lo capturo en la otra vuelta en ese dia, capaz pueda funcionar mejor.
+    luego de eso aplicar las cors para que los otros desarrolladores pueda agregar sus proyectos, integrar el guards para que se comuniquen las App entre sí y ademas
+    crear un metodo para jalar por un filro las monedas y con fecha desde hasta para crear un repórte de variacion cambiara y apoyar las posibles graficas de tendencia.
+    y por ultimo subir a producción em aws que al usuario se le haria mas facil agregar los endpoint de cors desde la configuración.
+*/

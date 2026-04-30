@@ -116,6 +116,14 @@ export class CurrencyRepository {
         return await this.currencyRepository.save(newCurrency);
     };
 
+    // Metodo para obtener los ultimos registros de la Base de Datos
+    async getLatestSavedCurrencies(): Promise<CurrencyEntity[]> {
+        return await this.currencyRepository.find({
+            order: { id: 'DESC' },
+            take: 21,
+        });
+    };
+
     rutaExcel_BCV(documento: Document): string {
         let rutaExcel = documento?.querySelector('#block-system-main table tbody .file a') as HTMLAnchorElement | null;
         return rutaExcel?.href as string;
