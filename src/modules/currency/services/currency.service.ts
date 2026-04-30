@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-//import { CurrencyEntity } from '../domain/currency.entity';
+import { CurrencyEntity } from '../domain/currency.entity';
 import { Injectable, HttpException, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { CURRENCY_TYPE } from '../../../config/currency.type.config';
@@ -14,13 +14,55 @@ import type { CurrencyType } from '../interfaces/types/currency.types';
 export class CurrencyService {
     constructor(private readonly currencyRepository: CurrencyRepository) { };
 
-    // Metodo llamado por el Controlador para responder a los usuarios (Lee de BD)
+    // Consulta en vivo al BCV. Si falla, devuelve el último registro de la BD (Fallback)
     async getCurrencies(): Promise<ICurrency[]> {
-        return await this.currencyRepository.getLatestSavedCurrencies();
-    }
+        const currencies: CurrencyType[] = CURRENCY_TYPE;
+        const tcBcv: ICurrency[] = [];
+        const urlBcv: string = 'https://www.bcv.org.ve/estadisticas/tipo-cambio-de-referencia-smc';
 
-    // Tarea Programada: Se ejecuta a las 6:00 AM y 6:00 PM
-    @Cron('0 0,6,12,18 * * *')
+        try {
+            // 1. Intento en vivo al BCV
+            const response: AxiosResponse<string> = await axios(configAxios('text', urlBcv));
+            const htmlDoc: string = response.data;
+            const doc: Document = new JSDOM(htmlDoc).window.document;
+
+            await this.currencyRepository.downExcel(doc);
+            console.log('------> Descarga Satisfactoria del Archivo <------');
+
+            for (const currency of currencies) {
+                const extract = this.currencyRepository.extractDataExcel(currency);
+                if (extract.currency !== null) {
+                    await this.currencyRepository.recordingCurrency(extract);
+                    tcBcv.push(extract as ICurrency);
+                };
+            };
+
+            console.log('------> Consulta en Vivo al BCV Exitosa <------');
+            return tcBcv;
+
+        } catch (err) {
+            // 2. Fallback: Si el BCV no responde, devolvemos el último registro de la BD
+            console.warn(`[FALLBACK] BCV no disponible: ${err.message}. Retornando último registro de la BD.`);
+            const fallbackData = await this.currencyRepository.getLatestSavedCurrencies();
+
+            if (fallbackData.length === 0) {
+                throw new BadRequestException('El BCV no está disponible y no hay registros previos en la base de datos.');
+            };
+
+            return fallbackData as unknown as ICurrency[];
+        };
+    };
+
+    async getCurrencyByFilter(
+        currency?: CurrencyType | CurrencyType[],
+        dateFrom?: Date,
+        dateTo?: Date
+    ):Promise<CurrencyEntity[]> {
+        return await this.currencyRepository.getCurrencyByFilter(currency, dateFrom, dateTo);
+    };
+
+    // Tarea Programada: 12 AM, 6 AM, 12 PM, 4 PM, 5 PM, 6 PM, 7 PM
+    @Cron('0 0,6,12,16,17,18,19 * * *')
     async syncCurrenciesFromBCV(): Promise<void> {
         const currencies: CurrencyType[] = CURRENCY_TYPE;
         const tcBcv: Partial<ICurrency[]> = [];

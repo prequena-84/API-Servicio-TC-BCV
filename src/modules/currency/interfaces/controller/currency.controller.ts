@@ -1,5 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
+import { CurrencyEntity } from '../../domain/currency.entity';
 import { CurrencyService } from '../../services/currency.service';
+import { CurrencyQueryDTO } from '../dto/currency.query.dto';
 
 import type { ICurrency } from '../types/currency.interfaces';
 
@@ -12,5 +14,10 @@ export class CurrencyController {
     @Get()
     async getCurrencies(): Promise<ICurrency[]> {
         return this.currencyService.getCurrencies();
+    };
+
+    @Get('filters')
+    async getCurrencyByFilter(@Query() query: CurrencyQueryDTO): Promise<CurrencyEntity[]> {
+        return this.currencyService.getCurrencyByFilter(query.currency, query.dateFrom, query.dateTo);
     };
 };

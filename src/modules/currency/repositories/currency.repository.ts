@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, In, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CurrencyEntity } from '../domain/currency.entity';
 //import { CURRENCY_TYPE } from '../../../config/currency.type.config';
 //import { JSDOM } from 'jsdom';
@@ -15,6 +15,7 @@ import path from 'path';
 import * as XLSX from 'xlsx';
 
 import type { ICurrency } from '../interfaces/types/currency.interfaces';
+import type { CurrencyType } from '../interfaces/types/currency.types';
 
 @Injectable()
 export class CurrencyRepository {
@@ -123,6 +124,39 @@ export class CurrencyRepository {
             take: 21,
         });
     };
+
+    async getCurrencyByFilter(
+        currency?: CurrencyType | CurrencyType[],
+        dateFrom?: Date,
+        dateTo?: Date
+    ): Promise<CurrencyEntity[]> {
+
+        // Inicializa el Where vacio
+        const where: any = {};
+
+        // 1. Filtro dinámico de monedas
+        if (currency) where.currency = Array.isArray(currency) ? In(currency) : currency;
+    
+        // 2. Filtro dinámico de fechas
+        if (dateFrom && dateTo) {
+            // Si vienen ambas, usamos el rango
+            where.lastUpdate = Between(dateFrom, dateTo);
+        } else if (dateFrom) {
+            // Si solo viene 'desde', buscamos todo lo posterior a esa fecha
+            where.lastUpdate = MoreThanOrEqual(dateFrom);
+        } else if (dateTo) {
+            // Si solo viene 'hasta', buscamos todo lo anterior a esa fecha
+            where.lastUpdate = LessThanOrEqual(dateTo);
+        };
+
+        // registros obtenidos y devolución de datos según los filtros aplicados
+        return await this.currencyRepository.find({
+            where,
+            order: {
+                lastUpdate: 'DESC',
+            },
+        });
+    }; 
 
     rutaExcel_BCV(documento: Document): string {
         let rutaExcel = documento?.querySelector('#block-system-main table tbody .file a') as HTMLAnchorElement | null;
