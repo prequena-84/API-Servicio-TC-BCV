@@ -2,7 +2,6 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { CurrencyEntity } from '../../domain/currency.entity';
 import { CurrencyService } from '../../services/currency.service';
 import { CurrencyQueryDTO } from '../dto/currency.query.dto';
-
 import type { ICurrency } from '../types/currency.interfaces';
 
 @Controller('api/v1/currencies')
