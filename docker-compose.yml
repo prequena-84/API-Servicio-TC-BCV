@@ -1,5 +1,5 @@
 services:
-  db-local:
+  db-local:  
     image: mysql:8.0.43
     container_name: db_tc_bcv_dev
     restart: always
@@ -36,6 +36,9 @@ services:
       - .:/app
       - /app/node_modules
     restart: unless-stopped
+    # ... otras configuraciones ...
+    environment:
+      - TZ=America/Caracas  # <--- Agrega esta línea
     depends_on:
       - db-local
 

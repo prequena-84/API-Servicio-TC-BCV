@@ -11,8 +11,9 @@ export class CurrencyController {
     ) {};
 
     @Get()
-    async getCurrencies(): Promise<ICurrency[]> {
-        return this.currencyService.getCurrencies();
+    async getCurrencies(@Query() query: Partial<CurrencyQueryDTO>): Promise<ICurrency[]> {
+        console.log('revision del query de entrada', query.currency);
+        return this.currencyService.getCurrencies(query.currency);
     };
 
     @Get('filters')

@@ -1,10 +1,10 @@
 import { IsString, IsNotEmpty, IsNumber, IsIn, IsDate, IsOptional } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import type { CurrencyType } from '../types/currency.types';
 
 export class CurrencyQueryDTO {
-    @IsString()
     @IsOptional()
+    @Transform(({ value }) => typeof value === 'string' ? value.split(',') : value) 
     @IsIn([
         "EUR", 
         "CNY", 
@@ -27,7 +27,7 @@ export class CurrencyQueryDTO {
         "DOP", 
         "TTD", 
         "ANG",
-    ])
+    ], { each: true }) 
     currency: CurrencyType | undefined;
 
     @IsDate()

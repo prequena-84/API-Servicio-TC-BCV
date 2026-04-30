@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Habilita la transformación y validación global de DTOs (@Transform, @IsString, etc.)
-  // app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Aumentar el límite del body para permitir archivos Base64 grandes
   //app.use(json({ limit: '50mb' }));

@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, Unique } from "typeorm";
 import type { ICurrency } from "../interfaces/types/currency.interfaces";
 import type { CurrencyType } from "../interfaces/types/currency.types";
 
+@Unique(['currency', 'lastUpdate'])
 @Entity({ name: 'currency' })
 export class CurrencyEntity implements ICurrency { 
     @PrimaryGeneratedColumn()

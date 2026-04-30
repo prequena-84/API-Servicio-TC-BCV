@@ -26,5 +26,6 @@ CREATE TABLE IF NOT EXISTS currency (
     lastUpdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de la última actualización',
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de creación',
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Indica la fecha y hora de actualización',
-    deletedAt TIMESTAMP DEFAULT NULL COMMENT 'Indica la fecha y hora de eliminación'
+    deletedAt TIMESTAMP DEFAULT NULL COMMENT 'Indica la fecha y hora de eliminación',
+    UNIQUE KEY unique_currency_lastUpdate (currency, lastUpdate) COMMENT 'Evita registros duplicados por moneda y fecha de actualización'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
